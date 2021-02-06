@@ -1,0 +1,23 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`cache-test 1`] = `
+NodeList [
+  3,
+  3,
+  Effect,
+]
+`;
+
+exports[`cache-test 2`] = `
+Object {
+  "[DATA][Key1]": 3,
+}
+`;
+
+exports[`cache-test 3`] = `Object {}`;
+
+exports[`cache-test 4`] = `
+Object {
+  "[DATA][Key1]": 3,
+}
+`;

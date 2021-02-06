@@ -5,9 +5,9 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc -b",
-    "test": "jest",
-    "test:update": "jest -u --watch",
-    "lint": "eslint --fix ./src",
+    "test": "jest --coverage",
+    "test:update": "jest -u --watch --coverage",
+    "lint": "eslint --fix ./src ./test",
     "lint:fix": "eslint --fix ./src"
   },
   "keywords": [

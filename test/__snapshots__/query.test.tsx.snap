@@ -1,0 +1,19 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`query 1`] = `
+NodeList [
+  <div>
+    undefined
+    ,
+    undefined
+  </div>,
+  2,
+  1,
+  2,
+  <div>
+    2
+    ,
+    1
+  </div>,
+]
+`;

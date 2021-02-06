@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { render, unmountComponentAtNode } from 'react-dom';
 import { act } from 'react-dom/test-utils';
 import { reset, useGlobalState } from '../src/index';
@@ -15,7 +15,7 @@ afterEach(() => {
   container.remove();
 });
 
-it('initData undefined', () => {
+it('initData-undefined', () => {
   const Component01 = () => {
     const [value] = useGlobalState('Key1');
     return <>{value ?? 'undefined'}</>;
@@ -42,7 +42,7 @@ it('initData undefined', () => {
   expect(container.childNodes).toMatchSnapshot();
 });
 
-it('initData', () => {
+it('initData-normal', () => {
   const Component01 = () => {
     const [value] = useGlobalState('Key1');
     return <>{value ?? 'undefined'}</>;
@@ -54,6 +54,34 @@ it('initData', () => {
   };
   const Component03 = () => {
     const [value] = useGlobalState('Key1', 2);
+    return <>{value ?? 'undefined'}</>;
+  };
+
+  act(() => {
+    render(
+      <>
+        <Component01 />
+        <Component02 />
+        <Component03 />
+      </>,
+      container
+    );
+  });
+  expect(container.childNodes).toMatchSnapshot();
+});
+
+it('initData-function', () => {
+  const Component01 = () => {
+    const [value] = useGlobalState('Key1');
+    return <>{value ?? 'undefined'}</>;
+  };
+  const Component02 = () => {
+    //first initData
+    const [value] = useGlobalState('Key1', () => 1);
+    return <>{value ?? 'undefined'}</>;
+  };
+  const Component03 = () => {
+    const [value] = useGlobalState('Key1', () => 2);
     return <>{value ?? 'undefined'}</>;
   };
 
@@ -144,6 +172,41 @@ it('onclick', () => {
   act(() => {
     const element = container.querySelector('#click');
     element?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+  expect(container.childNodes).toMatchSnapshot();
+});
+
+it('remove', () => {
+  const Component01 = () => {
+    const [value] = useGlobalState('Key1');
+    return <>{value ?? 'undefined'}</>;
+  };
+  const Component02 = () => {
+    //first initData
+    const [value] = useGlobalState('Key1', () => 1);
+    return <>{value ?? 'undefined'}</>;
+  };
+  const Component03 = () => {
+    const [value] = useGlobalState('Key1', () => 2);
+    return <>{value ?? 'undefined'}</>;
+  };
+  const Root = () => {
+    const [flag, setFlag] = useState(true);
+    useEffect(() => {
+      setFlag(false);
+    }, []);
+
+    return (
+      <>
+        <Component01 />
+        <Component02 />
+        {flag && <Component03 />}
+      </>
+    );
+  };
+
+  act(() => {
+    render(<Root />, container);
   });
   expect(container.childNodes).toMatchSnapshot();
 });

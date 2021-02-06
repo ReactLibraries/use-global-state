@@ -1,4 +1,5 @@
 import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
+import { render } from 'react-dom';
 type Render<T = unknown> = Dispatch<SetStateAction<T | undefined>>;
 const renderMap = new Map<string, Set<Render>>();
 const initialKyes = new Set<string>();
@@ -28,28 +29,22 @@ export const setCache = <T = unknown>(src: { [key: string]: T }) => {
 export const query = <T = unknown>(keys: string | string[]) => cache[NormalizeKey(keys)] as T;
 
 export const mutate = <T = Object>(
-  keys?: string | string[],
-  data?: T | Promise<T> | ((data: T) => T | Promise<T>)
+  keys: string | string[],
+  data: T | Promise<T> | ((data: T) => T | Promise<T>)
 ) => {
-  const key = keys && NormalizeKey(keys);
-  if (key) {
-    if (data !== undefined) {
-      const value =
-        typeof data === 'function' ? (data as (data: T) => T | Promise<T>)(cache[key] as T) : data;
-      if (value instanceof Promise) {
-        value.then((data) => {
-          cache[key] = data;
-          renderMap.get(key)?.forEach((render) => render(data));
-          initialKyes.add(key);
-        });
-      } else {
-        cache[key] = data;
-        renderMap.get(key)?.forEach((render) => render(data));
-        initialKyes.add(key);
-      }
-    }
+  const key = NormalizeKey(keys);
+  const value =
+    typeof data === 'function' ? (data as (data: T) => T | Promise<T>)(cache[key] as T) : data;
+  if (value instanceof Promise) {
+    value.then((data) => {
+      cache[key] = data;
+      renderMap.get(key)?.forEach((render) => render(data));
+      initialKyes.add(key);
+    });
   } else {
-    renderMap.forEach((renders) => renders.forEach((render) => render((value: unknown) => value)));
+    cache[key] = data;
+    renderMap.get(key)?.forEach((render) => render(data));
+    initialKyes.add(key);
   }
 };
 
@@ -61,14 +56,15 @@ export const useGlobalState = <T = unknown>(
   const key = useMemo(() => NormalizeKey(keys), Array.isArray(keys) ? keys : [keys]);
   const [state, render] = useState<T | undefined>((cache[key] as T) || initialData);
   const dispatch = useCallback(
-    (data?: T | ((data: T) => T)) => {
+    (data: T | ((data: T) => T)) => {
       mutate(keys, data);
     },
     [key]
   );
   let init = false;
   useEffect(() => {
-    init && renderMap.get(key)?.forEach((r) => r(cache[key]));
+    const renders = renderMap.get(key)!;
+    init && renders.forEach((r) => r(cache[key]));
     return () => {
       (renderMap as RenderMap).get(key)?.delete(render);
     };
@@ -78,7 +74,8 @@ export const useGlobalState = <T = unknown>(
     initialKyes.add(key);
     init = true;
   }
-  if (renderMap.has(key)) (renderMap as RenderMap).get(key)?.add(render);
+  const renders = (renderMap as RenderMap).get(key)!;
+  if (renders) renders.add(render);
   else (renderMap as RenderMap).set(key, new Set<Render<T>>().add(render));
 
   return [state, dispatch] as const;

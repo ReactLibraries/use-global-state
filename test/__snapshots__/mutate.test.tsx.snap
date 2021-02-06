@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`mutate 1`] = `
+NodeList [
+  100,
+  200,
+  100,
+]
+`;

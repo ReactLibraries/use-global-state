@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`initData 1`] = `
+exports[`initData-function 1`] = `
 NodeList [
   1,
   1,
@@ -8,7 +8,15 @@ NodeList [
 ]
 `;
 
-exports[`initData undefined 1`] = `
+exports[`initData-normal 1`] = `
+NodeList [
+  1,
+  1,
+  1,
+]
+`;
+
+exports[`initData-undefined 1`] = `
 NodeList [
   undefined,
   undefined,
@@ -37,6 +45,13 @@ NodeList [
   </button>,
   Click,
   Click,
+]
+`;
+
+exports[`remove 1`] = `
+NodeList [
+  1,
+  1,
 ]
 `;
 
