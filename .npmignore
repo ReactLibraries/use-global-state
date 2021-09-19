@@ -6,5 +6,6 @@ tsconfig.json
 jest.config.js
 .eslintrc.json
 .github
+*.log
 /test
-/coverrage
+/coverage

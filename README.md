@@ -108,3 +108,19 @@ const cache = getCache([...KeyGroups]); //Pass this data to props
 //For SSR
 setCache(cache);
 ```
+
+- Provider - `GlobalState`をProvider範囲内に限定します
+
+```tsx
+import { Provider } from '../hooks/useContexts'
+
+const Page = () => {
+  return (
+    <Provider>
+      <Test />
+    </Provider>
+  )
+}
+
+export default Page
+```

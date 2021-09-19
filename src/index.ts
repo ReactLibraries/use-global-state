@@ -1,19 +1,61 @@
-import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react'
-type Render<T = unknown> = Dispatch<SetStateAction<T | undefined>>
-const renderMap = new Map<string, Set<Render>>()
-const initialKyes = new Set<string>()
-export const cache: { [key: string]: unknown } = {}
+import {
+  createContext,
+  createElement,
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState
+} from 'react'
 
+type Render<T = unknown> = Dispatch<SetStateAction<T | undefined>>
+type ContextType = {
+  renderMap: Map<string, Set<Render>>
+  initialKeys: Set<string>
+  cache: { [key: string]: unknown }
+}
+
+const context = createContext<ContextType>(undefined as never)
+export const Provider = ({
+  value,
+  children
+}: {
+  value?: Partial<ContextType>
+  children?: React.ReactNode
+}) => {
+  const v = value || {}
+  v.renderMap = new Map<string, Set<Render>>()
+  v.initialKeys = new Set<string>()
+  v.cache = {}
+  return createElement<{ value: ContextType }>(
+    context.Provider,
+    { value: v as ContextType },
+    children
+  )
+}
 const NormalizeKey = (keys: string | string[]) =>
   (Array.isArray(keys) ? keys : [keys]).reduce((a, b) => `${a}[${b}]`, '')
 
-export const reset = () => {
+const globalContext = {
+  renderMap: new Map<string, Set<Render>>(),
+  initialKeys: new Set<string>(),
+  cache: {}
+}
+
+export const reset = (context: ContextType = globalContext) => {
+  const { renderMap, initialKeys, cache } = context
   renderMap.clear()
-  initialKyes.clear()
+  initialKeys.clear()
   Object.keys(cache).forEach((key) => delete cache[key])
 }
 
-export const getCache = <T = unknown>(keys: string | string[]) => {
+export const getCache = <T = unknown>(
+  keys: string | string[],
+  context: ContextType = globalContext
+) => {
+  const { cache } = context
   const key = NormalizeKey(keys)
   const result: { [key: string]: T } = {}
   Object.entries(cache)
@@ -21,16 +63,26 @@ export const getCache = <T = unknown>(keys: string | string[]) => {
     .forEach(([key, value]) => (result[key] = value as T))
   return result
 }
-export const setCache = <T = unknown>(src: { [key: string]: T }) => {
-  Object.entries(src).forEach(([key, value]) => (cache[key] = value as T))
+export const setCache = <T = unknown>(
+  src: { [key: string]: T },
+  context: ContextType = globalContext
+) => {
+  const { initialKeys, cache } = context
+  Object.entries(src).forEach(([key, value]) => {
+    cache[key] = value as T
+    initialKeys.add(key)
+  })
 }
 
-export const query = <T = unknown>(keys: string | string[]) => cache[NormalizeKey(keys)] as T
+export const query = <T = unknown>(keys: string | string[], context: ContextType = globalContext) =>
+  context.cache[NormalizeKey(keys)] as T
 
 export const mutate = <T = Object>(
   keys: string | string[],
-  data: T | Promise<T> | ((data: T) => T | Promise<T>)
+  data: T | Promise<T> | ((data: T) => T | Promise<T>),
+  context: ContextType = globalContext
 ) => {
+  const { renderMap, initialKeys, cache } = context
   const key = NormalizeKey(keys)
   const value =
     typeof data === 'function' ? (data as (data: T) => T | Promise<T>)(cache[key] as T) : data
@@ -38,31 +90,34 @@ export const mutate = <T = Object>(
     value.then((data) => {
       cache[key] = data
       renderMap.get(key)?.forEach((render) => render(data))
-      initialKyes.add(key)
+      initialKeys.add(key)
     })
   } else {
     cache[key] = data
     renderMap.get(key)?.forEach((render) => render(data))
-    initialKyes.add(key)
+    initialKeys.add(key)
   }
 }
 
 export const useGlobalState: {
-  <T = unknown>(keys: string | string[]): readonly [
-    T | undefined,
-    (data: T | ((data: T) => T)) => void
-  ]
   <T>(keys: string | string[], initialData: T | (() => T)): readonly [
     T,
     (data: T | ((data: T) => T)) => void
   ]
+  <T = unknown>(keys: string | string[], initialData?: T | (() => T)): readonly [
+    T | undefined,
+    (data: T | ((data: T) => T)) => void
+  ]
 } = <T>(keys: string | string[], initialData?: T | (() => T)) => {
+  const c = useContext<ContextType>(context) || globalContext
+  const { renderMap, initialKeys, cache } = c
+
   type RenderMap = Map<string, Set<Render<T>>>
   const key = useMemo(() => NormalizeKey(keys), Array.isArray(keys) ? keys : [keys])
   const [state, render] = useState<T | undefined>((cache[key] as T) || initialData)
   const dispatch = useCallback(
     (data: T | ((data: T) => T)) => {
-      mutate(keys, data)
+      mutate(keys, data, c)
     },
     [key]
   )
@@ -74,9 +129,9 @@ export const useGlobalState: {
       ;(renderMap as RenderMap).get(key)?.delete(render)
     }
   }, [])
-  if (initialData !== undefined && !initialKyes.has(key)) {
+  if (initialData !== undefined && !initialKeys.has(key)) {
     cache[key] = typeof initialData === 'function' ? (initialData as () => T)() : initialData
-    initialKyes.add(key)
+    initialKeys.add(key)
     init = true
   }
   const renders = (renderMap as RenderMap).get(key)!
