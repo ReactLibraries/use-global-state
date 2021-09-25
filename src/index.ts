@@ -99,6 +99,17 @@ export const mutate = <T = Object>(
   }
 };
 
+export const useQuery = () => {
+  const c = useContext<ContextType>(context) || globalContext;
+  return <T = unknown>(keys: string | string[]) => query<T>(keys, c);
+};
+
+export const useMutation = () => {
+  const c = useContext<ContextType>(context) || globalContext;
+  return <T>(keys: string | string[], state: T | Promise<T> | ((data: T) => T | Promise<T>)) =>
+    mutate<T>(keys, state, c);
+};
+
 export const useGlobalState: {
   <T>(keys: string | string[], initialData: T | (() => T)): readonly [
     T,

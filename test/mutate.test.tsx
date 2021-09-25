@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { render, unmountComponentAtNode } from 'react-dom';
 import { act } from 'react-dom/test-utils';
-import { reset, useGlobalState, mutate } from '../src/index';
+import { reset, useGlobalState, mutate, useMutation, useQuery } from '../src/index';
 
 let container: HTMLElement;
 beforeEach(() => {
@@ -38,6 +38,24 @@ it('mutate', async () => {
 
     return null;
   };
+  const Component05 = () => {
+    const mutation = useMutation();
+    useEffect(() => {
+      mutation(['DATA', 'Key2'], 123);
+    }, []);
+
+    return null;
+  };
+  const Component06 = () => {
+    const [value1] = useGlobalState(['DATA', 'Key1']);
+    const [value2] = useGlobalState(['DATA', 'Key2']);
+    const [value3] = useGlobalState(['DATA1', 'Key1']);
+    const [value4] = useGlobalState(['DATA2', 'Key1']);
+    const query = useQuery();
+    const value5 = query(['DATA', 'Key1']);
+
+    return <>{[value1, value2, value3, value4, value5].join(',')}</>;
+  };
   await act(async () => {
     render(
       <>
@@ -45,6 +63,8 @@ it('mutate', async () => {
         <Component02 />
         <Component03 />
         <Component04 />
+        <Component05 />
+        <Component06 />
       </>,
       container
     );
