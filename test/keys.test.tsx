@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { render, unmountComponentAtNode } from 'react-dom';
 import { act } from 'react-dom/test-utils';
 import { reset, useGlobalState } from '../src/index';
@@ -26,6 +26,67 @@ it('initData undefined', () => {
   };
   const Component03 = () => {
     const [value] = useGlobalState(['DATA', 'Key1']);
+    return <>{value ?? 'undefined'}</>;
+  };
+
+  act(() => {
+    render(
+      <>
+        <Component01 />
+        <Component02 />
+        <Component03 />
+      </>,
+      container
+    );
+  });
+  expect(container.childNodes).toMatchSnapshot();
+});
+
+it('rename', () => {
+  const Component01 = () => {
+    const [name, setName] = useState("DATA")
+    const [value] = useGlobalState([name, 'Key1']);
+    useEffect(() => {
+      setName("DATA2")
+    }, [])
+    return <>{value ?? 'undefined'}</>;
+  };
+  const Component02 = () => {
+    const [value] = useGlobalState(['DATA', 'Key1'], 100);
+    return <>{value ?? 'undefined'}</>;
+  };
+  const Component03 = () => {
+    const [value] = useGlobalState(['DATA', 'Key1']);
+    return <>{value ?? 'undefined'}</>;
+  };
+
+  act(() => {
+    render(
+      <>
+        <Component01 />
+        <Component02 />
+        <Component03 />
+      </>,
+      container
+    );
+  });
+  expect(container.childNodes).toMatchSnapshot();
+});
+it('rename2', () => {
+  const Component01 = () => {
+    const [name, setName] = useState("DATA")
+    const [value] = useGlobalState([name, 'Key1']);
+    useEffect(() => {
+      setName("DATA2")
+    }, [])
+    return <>{value ?? 'undefined'}</>;
+  };
+  const Component02 = () => {
+    const [value] = useGlobalState(['DATA', 'Key1'], 100);
+    return <>{value ?? 'undefined'}</>;
+  };
+  const Component03 = () => {
+    const [value] = useGlobalState(['DATA2', 'Key1'], 200);
     return <>{value ?? 'undefined'}</>;
   };
 

@@ -40,6 +40,22 @@ NodeList [
 ]
 `;
 
+exports[`rename 1`] = `
+NodeList [
+  undefined,
+  100,
+  100,
+]
+`;
+
+exports[`rename2 1`] = `
+NodeList [
+  200,
+  100,
+  200,
+]
+`;
+
 exports[`useEffect 1`] = `
 NodeList [
   3,

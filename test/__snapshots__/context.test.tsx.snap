@@ -1,5 +1,11 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Provider value 1`] = `
+NodeList [
+  10,
+]
+`;
+
 exports[`initData-function 1`] = `
 NodeList [
   1,

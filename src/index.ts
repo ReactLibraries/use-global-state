@@ -7,6 +7,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -14,6 +15,7 @@ type Render<T = unknown> = Dispatch<SetStateAction<T | undefined>>;
 export type ContextType = {
   renderMap: Map<string, Set<Render>>;
   initialKeys: Set<string>;
+  initialDatas: Map<string, unknown>;
   cache: { [key: string]: unknown };
 };
 
@@ -27,8 +29,15 @@ export const Provider = ({
 }) => {
   const v = value || {};
   v.renderMap = new Map<string, Set<Render>>();
+  v.initialDatas = new Map<string, unknown>();
   v.initialKeys = new Set<string>();
-  v.cache = {};
+  if (v.cache) {
+    Object.entries(v.cache).forEach(([key]) => {
+      v.initialKeys!.add(key);
+    });
+  } else {
+    v.cache = {};
+  }
   return createElement<{ value: ContextType }>(
     context.Provider,
     { value: v as ContextType },
@@ -41,6 +50,7 @@ const NormalizeKey = (keys: string | string[]) =>
 const globalContext = {
   renderMap: new Map<string, Set<Render>>(),
   initialKeys: new Set<string>(),
+  initialDatas: new Map<string, unknown>(),
   cache: {},
 };
 
@@ -49,6 +59,18 @@ export const reset = (context: ContextType = globalContext) => {
   renderMap.clear();
   initialKeys.clear();
   Object.keys(cache).forEach((key) => delete cache[key]);
+};
+
+export const clearCache = (keys: string | string[], context: ContextType = globalContext) => {
+  const { renderMap, initialKeys, initialDatas, cache } = context;
+  const key = NormalizeKey(keys);
+  Object.keys(cache)
+    .filter((k) => k.indexOf(key) === 0)
+    .forEach((key) => {
+      initialKeys.delete(key);
+      delete cache[key];
+      renderMap.get(key)?.forEach((render) => render(initialDatas.get(key)));
+    });
 };
 
 export const getCache = <T = unknown>(
@@ -120,34 +142,45 @@ export const useGlobalState: {
     (data: T | ((data: T) => T)) => void
   ];
 } = <T>(keys: string | string[], initialData?: T | (() => T)) => {
-  const c = useContext<ContextType>(context) || globalContext;
-  const { renderMap, initialKeys, cache } = c;
+  const key = useMemo(() => NormalizeKey(keys), Array.isArray(keys) ? keys : [keys]);
+  const property = useRef<{ keyName: string }>({ keyName: key }).current;
+  const con = useContext<ContextType>(context) || globalContext;
+  const { renderMap, initialKeys, initialDatas, cache } = con;
 
   type RenderMap = Map<string, Set<Render<T>>>;
-  const key = useMemo(() => NormalizeKey(keys), Array.isArray(keys) ? keys : [keys]);
-  const [state, render] = useState<T | undefined>((cache[key] as T) || initialData);
+  const [state, render] = useState<T | undefined>(
+    cache[key] === undefined ? initialData : (cache[key] as T)
+  );
   const dispatch = useCallback(
     (data: T | ((data: T) => T)) => {
-      mutate(keys, data, c);
+      mutate(keys, data, con);
     },
-    [key]
+    [key, con]
   );
   let init = false;
   useEffect(() => {
     const renders = renderMap.get(key)!;
     init && renders.forEach((r) => r(cache[key]));
     return () => {
+      init = false;
       (renderMap as RenderMap).get(key)?.delete(render);
     };
-  }, []);
+  }, [key]);
   if (initialData !== undefined && !initialKeys.has(key)) {
-    cache[key] = typeof initialData === 'function' ? (initialData as () => T)() : initialData;
+    const value = typeof initialData === 'function' ? (initialData as () => T)() : initialData;
+    cache[key] = value;
     initialKeys.add(key);
+    initialDatas.set(key, value);
     init = true;
   }
   const renders = (renderMap as RenderMap).get(key)!;
   if (renders) renders.add(render);
   else (renderMap as RenderMap).set(key, new Set<Render<T>>().add(render));
-
+  if (property.keyName !== key) {
+    property.keyName = key;
+    const value = cache[key] === undefined ? initialData : (cache[key] as T);
+    render(value);
+    return [value, dispatch] as const;
+  }
   return [state, dispatch] as const;
 };

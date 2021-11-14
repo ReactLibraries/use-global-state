@@ -1,19 +1,37 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`clear 1`] = `
+NodeList [
+  undefined,
+  ,,
+  undefined,
+  undefined,
+  1,
+  undefined,
+  2,
+  ,,
+  1,
+]
+`;
+
+exports[`mutate & clear 1`] = `
+Object {
+  "[cache]": 123,
+}
+`;
+
+exports[`mutate & clear 2`] = `Object {}`;
+
 exports[`query 1`] = `
 NodeList [
-  <div>
-    undefined
-    ,
-    undefined
-  </div>,
+  undefined,
+  ,,
+  undefined,
   2,
   1,
   2,
-  <div>
-    2
-    ,
-    1
-  </div>,
+  2,
+  ,,
+  1,
 ]
 `;

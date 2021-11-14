@@ -211,3 +211,20 @@ it('remove', () => {
   })
   expect(container.childNodes).toMatchSnapshot()
 })
+
+it('Provider value', () => {
+  const Component01 = () => {
+    const [value] = useGlobalState('Key1', 5)
+    return <>{value}</>
+  }
+  const value = { cache: { '[Key1]': 10 } }
+  act(() => {
+    render(
+      <Provider value={value}>
+        <Component01 />
+      </Provider >,
+      container
+    )
+  })
+  expect(container.childNodes).toMatchSnapshot()
+})
