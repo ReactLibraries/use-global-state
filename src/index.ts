@@ -11,33 +11,42 @@ import {
   useState,
 } from 'react';
 
+type CacheType = { [key: string]: unknown };
+type UpdateType = (newValue: CacheType, oldValue: CacheType) => void;
 type Render<T = unknown> = Dispatch<SetStateAction<T | undefined>>;
 export type ContextType = {
   renderMap: Map<string, Set<Render>>;
   initialKeys: Set<string>;
   initialDatas: Map<string, unknown>;
-  cache: { [key: string]: unknown };
+  updateEvents: Set<UpdateType>;
+  cache: CacheType;
 };
 
 const context = createContext<ContextType>(undefined as never);
 export const Provider = ({
   value,
+  onUpdate,
   children,
 }: {
-  value?: Partial<ContextType>;
+  value?: CacheType;
+  onUpdate?: UpdateType;
   children?: React.ReactNode;
 }) => {
-  const v = value || {};
-  v.renderMap = new Map<string, Set<Render>>();
-  v.initialDatas = new Map<string, unknown>();
-  v.initialKeys = new Set<string>();
-  if (v.cache) {
-    Object.entries(v.cache).forEach(([key]) => {
-      v.initialKeys!.add(key);
-    });
-  } else {
-    v.cache = {};
+  const c = useContext<ContextType>(context);
+  const v = c || createContextValue(value);
+  if (onUpdate) {
+    v.updateEvents.add(onUpdate);
   }
+  useEffect(() => {
+    return () => {
+      onUpdate && v.updateEvents.delete(onUpdate);
+    };
+  }, [onUpdate]);
+
+  if (value) v.cache = { ...v.cache, ...value };
+  Object.entries(v.cache).forEach(([key]) => {
+    v.initialKeys!.add(key);
+  });
   return createElement<{ value: ContextType }>(
     context.Provider,
     { value: v as ContextType },
@@ -45,14 +54,23 @@ export const Provider = ({
   );
 };
 const NormalizeKey = (keys: string | string[]) =>
-  (Array.isArray(keys) ? keys : [keys]).reduce((a, b) => `${a}[${b}]`, '');
+  (Array.isArray(keys) ? keys : [keys]).reduce((a, b) => `${a}${encodeURIComponent(b)}/`, '');
 
-const globalContext = {
-  renderMap: new Map<string, Set<Render>>(),
-  initialKeys: new Set<string>(),
-  initialDatas: new Map<string, unknown>(),
-  cache: {},
+const createContextValue = (cache: CacheType = {}) => {
+  const context = {
+    renderMap: new Map<string, Set<Render>>(),
+    initialKeys: new Set<string>(),
+    initialDatas: new Map<string, unknown>(),
+    updateEvents: new Set<UpdateType>(),
+    cache,
+  };
+  Object.entries(cache).forEach(([key, value]) => {
+    context.initialKeys.add(key);
+    context.initialDatas.set(key, value);
+  });
+  return context;
 };
+const globalContext = createContextValue();
 
 export const reset = (context: ContextType = globalContext) => {
   const { renderMap, initialKeys, cache } = context;
@@ -75,9 +93,8 @@ export const clearCache = (keys: string | string[], context: ContextType = globa
 
 export const getCache = <T = unknown>(
   keys: string | string[],
-  context: ContextType = globalContext
+  cache: CacheType = globalContext.cache
 ) => {
-  const { cache } = context;
   const key = NormalizeKey(keys);
   const result: { [key: string]: T } = {};
   Object.entries(cache)
@@ -85,16 +102,16 @@ export const getCache = <T = unknown>(
     .forEach(([key, value]) => (result[key] = value as T));
   return result;
 };
-export const setCache = <T = unknown>(
-  src: { [key: string]: T },
-  context: ContextType = globalContext
-) => {
+export const setCache = <T = unknown>(src: CacheType, context: ContextType = globalContext) => {
   const { initialKeys, cache } = context;
   Object.entries(src).forEach(([key, value]) => {
     cache[key] = value as T;
     initialKeys.add(key);
   });
 };
+
+export const createContextCache = (values: ReadonlyArray<readonly [string | string[], unknown]>) =>
+  Object.fromEntries(values.map(([key, value]) => [NormalizeKey(key), value]));
 
 export const query = <T = unknown>(keys: string | string[], context: ContextType = globalContext) =>
   context.cache[NormalizeKey(keys)] as T;
@@ -104,10 +121,11 @@ export const mutate = <T = Object>(
   data: T | Promise<T> | ((data: T) => T | Promise<T>),
   context: ContextType = globalContext
 ) => {
-  const { renderMap, initialKeys, cache } = context;
+  const { renderMap, initialKeys, updateEvents, cache } = context;
   const key = NormalizeKey(keys);
   const value =
     typeof data === 'function' ? (data as (data: T) => T | Promise<T>)(cache[key] as T) : data;
+  const old = { ...cache };
   if (value instanceof Promise) {
     value.then((data) => {
       cache[key] = data;
@@ -119,6 +137,7 @@ export const mutate = <T = Object>(
     renderMap.get(key)?.forEach((render) => render(data));
     initialKeys.add(key);
   }
+  updateEvents.forEach((update) => update(cache, old));
 };
 
 export const useQuery = () => {
@@ -145,7 +164,7 @@ export const useGlobalState: {
   const key = useMemo(() => NormalizeKey(keys), Array.isArray(keys) ? keys : [keys]);
   const property = useRef<{ keyName: string }>({ keyName: key }).current;
   const con = useContext<ContextType>(context) || globalContext;
-  const { renderMap, initialKeys, initialDatas, cache } = con;
+  const { renderMap, initialKeys, initialDatas, updateEvents, cache } = con;
 
   type RenderMap = Map<string, Set<Render<T>>>;
   const [state, render] = useState<T | undefined>(
@@ -168,9 +187,11 @@ export const useGlobalState: {
   }, [key]);
   if (initialData !== undefined && !initialKeys.has(key)) {
     const value = typeof initialData === 'function' ? (initialData as () => T)() : initialData;
-    cache[key] = value;
     initialKeys.add(key);
     initialDatas.set(key, value);
+    const old = { ...cache };
+    cache[key] = value;
+    updateEvents.forEach((update) => update(cache, old));
     init = true;
   }
   const renders = (renderMap as RenderMap).get(key)!;

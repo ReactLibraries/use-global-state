@@ -44,11 +44,11 @@ it('initData undefined', () => {
 
 it('rename', () => {
   const Component01 = () => {
-    const [name, setName] = useState("DATA")
+    const [name, setName] = useState('DATA');
     const [value] = useGlobalState([name, 'Key1']);
     useEffect(() => {
-      setName("DATA2")
-    }, [])
+      setName('DATA2');
+    }, []);
     return <>{value ?? 'undefined'}</>;
   };
   const Component02 = () => {
@@ -74,11 +74,11 @@ it('rename', () => {
 });
 it('rename2', () => {
   const Component01 = () => {
-    const [name, setName] = useState("DATA")
+    const [name, setName] = useState('DATA');
     const [value] = useGlobalState([name, 'Key1']);
     useEffect(() => {
-      setName("DATA2")
-    }, [])
+      setName('DATA2');
+    }, []);
     return <>{value ?? 'undefined'}</>;
   };
   const Component02 = () => {

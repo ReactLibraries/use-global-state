@@ -10,7 +10,7 @@ NodeList [
 
 exports[`cache-test 2`] = `
 Object {
-  "[DATA][Key1]": 3,
+  "DATA/Key1/": 3,
 }
 `;
 
@@ -18,6 +18,6 @@ exports[`cache-test 3`] = `Object {}`;
 
 exports[`cache-test 4`] = `
 Object {
-  "[DATA][Key1]": 3,
+  "DATA/Key1/": 3,
 }
 `;

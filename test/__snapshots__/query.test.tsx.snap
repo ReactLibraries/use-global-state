@@ -16,7 +16,7 @@ NodeList [
 
 exports[`mutate & clear 1`] = `
 Object {
-  "[cache]": 123,
+  "cache/": 123,
 }
 `;
 

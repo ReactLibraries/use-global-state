@@ -1,8 +1,62 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Provider nest update 1`] = `
+NodeList [
+  5,
+]
+`;
+
+exports[`Provider nest update 2`] = `
+Array [
+  Object {
+    "Key1/": 5,
+  },
+  Object {
+    "Key1/": 5,
+    "Key2/": "ABC",
+  },
+]
+`;
+
+exports[`Provider unmount 1`] = `NodeList []`;
+
+exports[`Provider unmount 2`] = `
+Array [
+  Object {},
+  Object {
+    "Key1/": 5,
+  },
+]
+`;
+
+exports[`Provider update 1`] = `
+NodeList [
+  5,
+]
+`;
+
+exports[`Provider update 2`] = `
+Array [
+  Object {
+    "Key1/": 5,
+  },
+  Object {
+    "Key1/": 5,
+    "Key2/": "ABC",
+  },
+]
+`;
+
 exports[`Provider value 1`] = `
 NodeList [
   10,
+]
+`;
+
+exports[`Provider value 2`] = `
+Array [
+  undefined,
+  undefined,
 ]
 `;
 
