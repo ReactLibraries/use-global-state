@@ -21,8 +21,17 @@ export type ContextType = {
   updateEvents: Set<UpdateType>;
   cache: CacheType;
 };
+const globalUpdateEvents = new Set<UpdateType>();
+
+export const addUpdateEvent = (onUpdate: UpdateType) => {
+  globalUpdateEvents.add(onUpdate);
+};
+export const removeUpdateEvent = (onUpdate: UpdateType) => {
+  globalUpdateEvents.delete(onUpdate);
+};
 
 const context = createContext<ContextType>(undefined as never);
+const contexts = new Set<ContextType>();
 export const Provider = ({
   value,
   onUpdate,
@@ -33,7 +42,8 @@ export const Provider = ({
   children?: React.ReactNode;
 }) => {
   const c = useContext<ContextType>(context);
-  const v = c || createContextValue(value);
+  const nowContext = c ? undefined : createContextValue(value);
+  const v = c || nowContext;
   if (onUpdate) {
     v.updateEvents.add(onUpdate);
   }
@@ -42,6 +52,15 @@ export const Provider = ({
       onUpdate && v.updateEvents.delete(onUpdate);
     };
   }, [onUpdate]);
+  useEffect(() => {
+    if (nowContext) {
+      contexts.add(nowContext);
+      return () => {
+        contexts.delete(nowContext);
+      };
+    }
+  }, []);
+  nowContext && contexts.add(nowContext);
 
   if (value) v.cache = { ...v.cache, ...value };
   Object.entries(v.cache).forEach(([key]) => {
@@ -138,6 +157,21 @@ export const mutate = <T = Object>(
     initialKeys.add(key);
   }
   updateEvents.forEach((update) => update(cache, old));
+  globalUpdateEvents.forEach((update) => update(cache, old));
+};
+export const mutates = <T = Object>(
+  values: { [key: string]: T },
+  context: ContextType = globalContext
+) => {
+  const { renderMap, initialKeys, updateEvents, cache } = context;
+  const old = { ...cache };
+  Object.entries(values).forEach(([key, data]) => {
+    cache[key] = data;
+    renderMap.get(key)?.forEach((render) => render(data));
+    initialKeys.add(key);
+  });
+  updateEvents.forEach((update) => update(cache, old));
+  globalUpdateEvents.forEach((update) => update(cache, old));
 };
 
 export const useQuery = () => {
@@ -180,6 +214,7 @@ export const useGlobalState: {
   useEffect(() => {
     const renders = renderMap.get(key)!;
     init && renders.forEach((r) => r(cache[key]));
+    (renderMap as RenderMap).get(key)!.add(render);
     return () => {
       init = false;
       (renderMap as RenderMap).get(key)?.delete(render);
@@ -192,6 +227,7 @@ export const useGlobalState: {
     const old = { ...cache };
     cache[key] = value;
     updateEvents.forEach((update) => update(cache, old));
+    globalUpdateEvents.forEach((update) => update(cache, old));
     init = true;
   }
   const renders = (renderMap as RenderMap).get(key)!;
@@ -204,4 +240,32 @@ export const useGlobalState: {
     return [value, dispatch] as const;
   }
   return [state, dispatch] as const;
+};
+
+export const storageName = '@react-libraries/use-global-state';
+const handleStorage = (e: StorageEvent) => {
+  if (e.key === storageName && e.newValue) {
+    const values = JSON.parse(e.newValue);
+    mutates(values);
+    contexts.forEach((c) => mutates(values, c));
+  }
+};
+const handleUpdate = (value: CacheType) => {
+  localStorage.setItem(storageName, JSON.stringify(value));
+};
+export const setLocalStorage = (flag = true) => {
+  if (typeof window !== 'undefined') {
+    if (flag) {
+      addEventListener('storage', handleStorage);
+      addUpdateEvent(handleUpdate);
+      const value = localStorage.getItem(storageName);
+      if (value) {
+        const values = JSON.parse(value);
+        mutates(values);
+      }
+    } else {
+      removeEventListener('storage', handleStorage);
+      removeUpdateEvent(handleUpdate);
+    }
+  }
 };
