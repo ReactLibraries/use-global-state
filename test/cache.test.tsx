@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { render, unmountComponentAtNode } from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { act } from 'react-dom/test-utils';
 import { reset, useGlobalState, getCache, setCache } from '../src/index';
 
@@ -8,10 +8,10 @@ beforeEach(() => {
   reset();
   container = document.createElement('div');
   document.body.appendChild(container);
+  global.IS_REACT_ACT_ENVIRONMENT = true;
 });
 
 afterEach(() => {
-  unmountComponentAtNode(container);
   container.remove();
 });
 
@@ -35,15 +35,14 @@ it('cache-test', () => {
     }, []);
     return <>{value ?? 'undefined'}</>;
   };
-
+  const root = createRoot(container);
   act(() => {
-    render(
+    root.render(
       <>
         <Component01 />
         <Component02 />
         <Component03 />
-      </>,
-      container
+      </>
     );
   });
   expect(container.childNodes).toMatchSnapshot();
@@ -58,4 +57,7 @@ it('cache-test', () => {
   expect(cache3).toMatchSnapshot();
   const cache4 = getCache('D');
   expect(Object.keys(cache4).length).toBe(0);
+  act(() => {
+    root.unmount();
+  });
 });

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { render, unmountComponentAtNode } from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { act } from 'react-dom/test-utils';
 import { reset, useGlobalState } from '../src/index';
 
@@ -8,10 +8,10 @@ beforeEach(() => {
   reset();
   container = document.createElement('div');
   document.body.appendChild(container);
+  global.IS_REACT_ACT_ENVIRONMENT = true;
 });
 
 afterEach(() => {
-  unmountComponentAtNode(container);
   container.remove();
 });
 
@@ -28,18 +28,20 @@ it('initData undefined', () => {
     const [value] = useGlobalState(['DATA', 'Key1']);
     return <>{value ?? 'undefined'}</>;
   };
-
+  const root = createRoot(container);
   act(() => {
-    render(
+    root.render(
       <>
         <Component01 />
         <Component02 />
         <Component03 />
-      </>,
-      container
+      </>
     );
   });
   expect(container.childNodes).toMatchSnapshot();
+  act(() => {
+    root.unmount();
+  });
 });
 
 it('rename', () => {
@@ -59,18 +61,20 @@ it('rename', () => {
     const [value] = useGlobalState(['DATA', 'Key1']);
     return <>{value ?? 'undefined'}</>;
   };
-
+  const root = createRoot(container);
   act(() => {
-    render(
+    root.render(
       <>
         <Component01 />
         <Component02 />
         <Component03 />
-      </>,
-      container
+      </>
     );
   });
   expect(container.childNodes).toMatchSnapshot();
+  act(() => {
+    root.unmount();
+  });
 });
 it('rename2', () => {
   const Component01 = () => {
@@ -89,18 +93,20 @@ it('rename2', () => {
     const [value] = useGlobalState(['DATA2', 'Key1'], 200);
     return <>{value ?? 'undefined'}</>;
   };
-
+  const root = createRoot(container);
   act(() => {
-    render(
+    root.render(
       <>
         <Component01 />
         <Component02 />
         <Component03 />
-      </>,
-      container
+      </>
     );
   });
   expect(container.childNodes).toMatchSnapshot();
+  act(() => {
+    root.unmount();
+  });
 });
 
 it('initData', () => {
@@ -116,18 +122,20 @@ it('initData', () => {
     const [value] = useGlobalState(['DATA', 'Key1'], 2);
     return <>{value ?? 'undefined'}</>;
   };
-
+  const root = createRoot(container);
   act(() => {
-    render(
+    root.render(
       <>
         <Component01 />
         <Component02 />
         <Component03 />
-      </>,
-      container
+      </>
     );
   });
   expect(container.childNodes).toMatchSnapshot();
+  act(() => {
+    root.unmount();
+  });
 });
 
 it('useEffect', () => {
@@ -150,18 +158,20 @@ it('useEffect', () => {
     }, []);
     return <>{value ?? 'undefined'}</>;
   };
-
+  const root = createRoot(container);
   act(() => {
-    render(
+    root.render(
       <>
         <Component01 />
         <Component02 />
         <Component03 />
-      </>,
-      container
+      </>
     );
   });
   expect(container.childNodes).toMatchSnapshot();
+  act(() => {
+    root.unmount();
+  });
 });
 
 it('onclick', () => {
@@ -189,15 +199,14 @@ it('onclick', () => {
     const [value] = useGlobalState('Key1', 2);
     return <>{value ?? 'undefined'}</>;
   };
-
+  const root = createRoot(container);
   act(() => {
-    render(
+    root.render(
       <>
         <Component01 />
         <Component02 />
         <Component03 />
-      </>,
-      container
+      </>
     );
   });
   expect(container.childNodes).toMatchSnapshot();
@@ -206,4 +215,7 @@ it('onclick', () => {
     element?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
   });
   expect(container.childNodes).toMatchSnapshot();
+  act(() => {
+    root.unmount();
+  });
 });

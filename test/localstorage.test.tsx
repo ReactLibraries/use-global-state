@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { render, unmountComponentAtNode } from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { act } from 'react-dom/test-utils';
 import {
   reset,
@@ -17,10 +17,10 @@ beforeEach(() => {
   reset();
   container = document.createElement('div');
   document.body.appendChild(container);
+  global.IS_REACT_ACT_ENVIRONMENT = true;
 });
 
 afterEach(() => {
-  unmountComponentAtNode(container);
   container.remove();
 });
 
@@ -74,8 +74,9 @@ it('mutate', async () => {
   };
   localStorage.setItem(storageName, JSON.stringify({ 'DATA2/Key1/': 3 }));
   setLocalStorage();
+  const root = createRoot(container);
   await act(async () => {
-    render(
+    root.render(
       // eslint-disable-next-line @typescript-eslint/no-empty-function
       <Provider onUpdate={() => {}}>
         <Component01 />
@@ -84,10 +85,12 @@ it('mutate', async () => {
         <Component04 />
         <Component05 />
         <Component06 />
-      </Provider>,
-      container
+      </Provider>
     );
   });
   setLocalStorage(false);
   expect(container.childNodes).toMatchSnapshot();
+  act(() => {
+    root.unmount();
+  });
 });

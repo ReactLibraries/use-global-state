@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { render, unmountComponentAtNode } from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { act } from 'react-dom/test-utils';
 import { createContextCache, reset, useGlobalState, useMutation } from '../src/index';
 import { Provider } from '../src/index';
@@ -9,10 +9,10 @@ beforeEach(() => {
   reset();
   container = document.createElement('div');
   document.body.appendChild(container);
+  global.IS_REACT_ACT_ENVIRONMENT = true;
 });
 
 afterEach(() => {
-  unmountComponentAtNode(container);
   container.remove();
 });
 
@@ -29,18 +29,20 @@ it('initData-undefined', () => {
     const [value] = useGlobalState('Key1');
     return <>{value ?? 'undefined'}</>;
   };
-
+  const root = createRoot(container);
   act(() => {
-    render(
+    root.render(
       <Provider>
         <Component01 />
         <Component02 />
         <Component03 />
-      </Provider>,
-      container
+      </Provider>
     );
   });
   expect(container.childNodes).toMatchSnapshot();
+  act(() => {
+    root.unmount();
+  });
 });
 
 it('initData-normal', () => {
@@ -57,18 +59,20 @@ it('initData-normal', () => {
     const [value] = useGlobalState('Key1', 2);
     return <>{value ?? 'undefined'}</>;
   };
-
+  const root = createRoot(container);
   act(() => {
-    render(
+    root.render(
       <Provider>
         <Component01 />
         <Component02 />
         <Component03 />
-      </Provider>,
-      container
+      </Provider>
     );
   });
   expect(container.childNodes).toMatchSnapshot();
+  act(() => {
+    root.unmount();
+  });
 });
 
 it('initData-function', () => {
@@ -85,18 +89,20 @@ it('initData-function', () => {
     const [value] = useGlobalState('Key1', () => 2);
     return <>{value ?? 'undefined'}</>;
   };
-
+  const root = createRoot(container);
   act(() => {
-    render(
+    root.render(
       <Provider>
         <Component01 />
         <Component02 />
         <Component03 />
-      </Provider>,
-      container
+      </Provider>
     );
   });
   expect(container.childNodes).toMatchSnapshot();
+  act(() => {
+    root.unmount();
+  });
 });
 
 it('useEffect', () => {
@@ -119,18 +125,20 @@ it('useEffect', () => {
     }, []);
     return <>{value ?? 'undefined'}</>;
   };
-
+  const root = createRoot(container);
   act(() => {
-    render(
+    root.render(
       <Provider>
         <Component01 />
         <Component02 />
         <Component03 />
-      </Provider>,
-      container
+      </Provider>
     );
   });
   expect(container.childNodes).toMatchSnapshot();
+  act(() => {
+    root.unmount();
+  });
 });
 
 it('onclick', () => {
@@ -158,15 +166,14 @@ it('onclick', () => {
     const [value] = useGlobalState('Key1', 2);
     return <>{value ?? 'undefined'}</>;
   };
-
+  const root = createRoot(container);
   act(() => {
-    render(
+    root.render(
       <Provider>
         <Component01 />
         <Component02 />
         <Component03 />
-      </Provider>,
-      container
+      </Provider>
     );
   });
   expect(container.childNodes).toMatchSnapshot();
@@ -175,6 +182,9 @@ it('onclick', () => {
     element?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
   });
   expect(container.childNodes).toMatchSnapshot();
+  act(() => {
+    root.unmount();
+  });
 });
 
 it('remove', () => {
@@ -205,11 +215,14 @@ it('remove', () => {
       </Provider>
     );
   };
-
+  const root = createRoot(container);
   act(() => {
-    render(<Root />, container);
+    root.render(<Root />);
   });
   expect(container.childNodes).toMatchSnapshot();
+  act(() => {
+    root.unmount();
+  });
 });
 
 it('Provider value', () => {
@@ -219,16 +232,19 @@ it('Provider value', () => {
   };
   const value = [['Key1', 10]] as const;
   let newValue: { [key: string]: unknown }, oldVallue: { [key: string]: unknown };
+  const root = createRoot(container);
   act(() => {
-    render(
+    root.render(
       <Provider value={createContextCache(value)}>
         <Component01 />
-      </Provider>,
-      container
+      </Provider>
     );
   });
   expect(container.childNodes).toMatchSnapshot();
   expect([oldVallue, newValue]).toMatchSnapshot();
+  act(() => {
+    root.unmount();
+  });
 });
 
 it('Provider update', () => {
@@ -241,8 +257,9 @@ it('Provider update', () => {
     return <>{value}</>;
   };
   let newValue: { [key: string]: unknown }, oldVallue: { [key: string]: unknown };
+  const root = createRoot(container);
   act(() => {
-    render(
+    root.render(
       <Provider
         onUpdate={(nv, ov) => {
           newValue = nv;
@@ -250,12 +267,14 @@ it('Provider update', () => {
         }}
       >
         <Component01 />
-      </Provider>,
-      container
+      </Provider>
     );
   });
   expect(container.childNodes).toMatchSnapshot();
   expect([oldVallue, newValue]).toMatchSnapshot();
+  act(() => {
+    root.unmount();
+  });
 });
 
 it('Provider nest update', () => {
@@ -268,8 +287,9 @@ it('Provider nest update', () => {
     return <>{value}</>;
   };
   let newValue: { [key: string]: unknown }, oldVallue: { [key: string]: unknown };
+  const root = createRoot(container);
   act(() => {
-    render(
+    root.render(
       <Provider
         onUpdate={(nv, ov) => {
           newValue = nv;
@@ -279,12 +299,14 @@ it('Provider nest update', () => {
         <Provider>
           <Component01 />
         </Provider>
-      </Provider>,
-      container
+      </Provider>
     );
   });
   expect(container.childNodes).toMatchSnapshot();
   expect([oldVallue, newValue]).toMatchSnapshot();
+  act(() => {
+    root.unmount();
+  });
 });
 
 it('Provider unmount', () => {
@@ -297,8 +319,9 @@ it('Provider unmount', () => {
     return state && <Provider>{value}</Provider>;
   };
   let newValue: { [key: string]: unknown }, oldVallue: { [key: string]: unknown };
+  const root = createRoot(container);
   act(() => {
-    render(
+    root.render(
       <Provider
         onUpdate={(nv, ov) => {
           newValue = nv;
@@ -306,10 +329,12 @@ it('Provider unmount', () => {
         }}
       >
         <Component01 />
-      </Provider>,
-      container
+      </Provider>
     );
   });
   expect(container.childNodes).toMatchSnapshot();
   expect([oldVallue, newValue]).toMatchSnapshot();
+  act(() => {
+    root.unmount();
+  });
 });

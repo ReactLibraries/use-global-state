@@ -1,17 +1,17 @@
 import React, { useEffect } from 'react';
-import { render, unmountComponentAtNode } from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { act } from 'react-dom/test-utils';
-import { reset, useGlobalState, query, clearCache, setCache, getCache, mutate } from '../src/index';
+import { reset, useGlobalState, query, clearCache, getCache, mutate } from '../src/index';
 
 let container: HTMLElement;
 beforeEach(() => {
   reset();
   container = document.createElement('div');
   document.body.appendChild(container);
+  global.IS_REACT_ACT_ENVIRONMENT = true;
 });
 
 afterEach(() => {
-  unmountComponentAtNode(container);
   container.remove();
 });
 
@@ -37,19 +37,22 @@ it('query', () => {
       </>
     );
   };
+  const root = createRoot(container);
   act(() => {
-    render(
+    root.render(
       <>
         <Component04 />
         <Component01 />
         <Component02 />
         <Component03 />
         <Component04 />
-      </>,
-      container
+      </>
     );
   });
   expect(container.childNodes).toMatchSnapshot();
+  act(() => {
+    root.unmount();
+  });
 });
 
 it('clear', () => {
@@ -68,31 +71,36 @@ it('clear', () => {
   const Component04 = () => {
     const value01 = query(['DATA', 'Key1']);
     const value02 = query(['DATA2', 'Key1']);
-    useEffect(() => { clearCache("DATA") }, [])
+    useEffect(() => {
+      clearCache('DATA');
+    }, []);
     return (
       <>
         {value01 || 'undefined'},{value02 || 'undefined'}
       </>
     );
   };
+  const root = createRoot(container);
   act(() => {
-    render(
+    root.render(
       <>
         <Component04 />
         <Component01 />
         <Component02 />
         <Component03 />
         <Component04 />
-      </>,
-      container
+      </>
     );
   });
   expect(container.childNodes).toMatchSnapshot();
+  act(() => {
+    root.unmount();
+  });
 });
 
 it('mutate & clear', () => {
-  mutate("cache", 123)
-  expect(getCache("cache")).toMatchSnapshot();
-  clearCache("cache")
-  expect(getCache("cache")).toMatchSnapshot();
+  mutate('cache', 123);
+  expect(getCache('cache')).toMatchSnapshot();
+  clearCache('cache');
+  expect(getCache('cache')).toMatchSnapshot();
 });

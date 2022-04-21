@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { render, unmountComponentAtNode } from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { act } from 'react-dom/test-utils';
 import { reset, useGlobalState, mutate, useMutation, useQuery } from '../src/index';
 
@@ -8,10 +8,10 @@ beforeEach(() => {
   reset();
   container = document.createElement('div');
   document.body.appendChild(container);
+  global.IS_REACT_ACT_ENVIRONMENT = true;
 });
 
 afterEach(() => {
-  unmountComponentAtNode(container);
   container.remove();
 });
 
@@ -56,8 +56,9 @@ it('mutate', async () => {
 
     return <>{[value1, value2, value3, value4, value5].join(',')}</>;
   };
+  const root = createRoot(container);
   await act(async () => {
-    render(
+    root.render(
       <>
         <Component01 />
         <Component02 />
@@ -65,9 +66,11 @@ it('mutate', async () => {
         <Component04 />
         <Component05 />
         <Component06 />
-      </>,
-      container
+      </>
     );
   });
   expect(container.childNodes).toMatchSnapshot();
+  act(() => {
+    root.unmount();
+  });
 });
